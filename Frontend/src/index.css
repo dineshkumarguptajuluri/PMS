@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary colors */
+  --color-primary-green: #A8C66C;
+  --color-primary-blue: #5FA8D3;
+  
+  /* Background colors */
+  --color-bg-main: #F7F9FB;
+  --color-bg-card: #FFFFFF;
+  --color-bg-soft: #F3F4F6;
+  
+  /* Text colors */
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  
+  /* Status colors */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+  
+  /* Badge styles */
+  --color-badge-info-bg: #E0F2FE;
+  --color-badge-info-text: #0284C7;
+  --color-badge-action-bg: #DCFCE7;
+  --color-badge-action-text: #16A34A;
+  
+  /* Announcement styles */
+  --color-announcement-bg: #FFF7ED;
+  --color-announcement-border: #F97316;
+  
+  /* Toast styles */
+  --color-toast-bg: #1F2937;
+  --color-toast-text: #FFFFFF;
+  
+  /* Custom background image for primary gradient */
+  --background-image-primary-gradient: linear-gradient(90deg, #A8C66C, #5FA8D3);
+  
+  /* Shadows */
+  --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+:root {
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
+}
+
+/* Global utility for gradient button/element */
+.bg-primary-gradient {
+  background-image: var(--background-image-primary-gradient);
+}
+
+/* ─── Animation Utilities (replaces tailwindcss-animate plugin) ─── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInFromBottom {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInFromTop {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-in {
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.animate-in.fade-in {
+  animation-name: fadeIn;
+}
+
+.animate-in.slide-in-from-bottom-2 {
+  animation-name: slideInFromBottom;
+}
+
+.animate-in.slide-in-from-right-full {
+  animation-name: slideInFromRight;
+}
+
+.animate-in.slide-in-from-top-4 {
+  animation-name: slideInFromTop;
+}
+
+.animate-in.zoom-in-95 {
+  animation-name: zoomIn;
+}
+
+.duration-200 {
+  animation-duration: 200ms;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}
+
+.duration-500 {
+  animation-duration: 500ms;
+}

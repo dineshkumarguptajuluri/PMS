@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CLIENT
+}
+
+enum OnboardingStatus {
+  PENDING
+  APPROVED
+}
+
+enum InterestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CheckpointStatus {
+  PENDING
+  DONE
+}
+
+model User {
+  id              Int            @id @default(autoincrement())
+  email           String         @unique
+  password        String
+  role            Role           @default(CLIENT)
+  clientProfile   ClientProfile?
+  notifications   Notification[]
+  managedProjects Project[]      @relation("ProjectManager")
+}
+
+model ClientProfile {
+  id               Int               @id @default(autoincrement())
+  userId           Int               @unique
+  user             User              @relation(fields: [userId], references: [id])
+  legalName        String
+  gstNumber        String?
+  industryType     String?
+  employeeCount    Int?
+  onboardingStatus OnboardingStatus  @default(PENDING)
+  documents        Document[]
+  projects         Project[]
+  projectInterests ProjectInterest[]
+}
+
+model Document {
+  id              Int           @id @default(autoincrement())
+  clientProfileId Int
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id])
+  fileUrl         String
+  docType         String
+}
+
+model Project {
+  id                  Int               @id @default(autoincrement())
+  title               String
+  clientId            Int?
+  clientProfile       ClientProfile?    @relation(fields: [clientId], references: [id])
+  managerId           Int?
+  manager             User?             @relation("ProjectManager", fields: [managerId], references: [id])
+  overallTargetDate   DateTime?
+  utilityFocus        String
+  optimizationDetails String
+  longDescription     String            @db.Text
+  projectInterests    ProjectInterest[]
+  checkpoints         Checkpoint[]
+}
+
+model ProjectInterest {
+  id        Int            @id @default(autoincrement())
+  projectId Int
+  project   Project        @relation(fields: [projectId], references: [id])
+  clientId  Int
+  client    ClientProfile  @relation(fields: [clientId], references: [id])
+  status    InterestStatus @default(PENDING)
+
+  @@unique([projectId, clientId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Checkpoint {
+  id         Int              @id @default(autoincrement())
+  projectId  Int
+  project    Project          @relation(fields: [projectId], references: [id])
+  title      String
+  targetDate DateTime
+  status     CheckpointStatus @default(PENDING)
+  order      Int
+}

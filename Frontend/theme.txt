@@ -1,0 +1,38 @@
+:root {
+  /* Gradient */
+  --gradient-primary: linear-gradient(90deg, #A8C66C, #5FA8D3);
+
+  /* Primary */
+  --color-primary-green: #A8C66C;
+  --color-primary-blue: #5FA8D3;
+
+  /* Background */
+  --color-bg-main: #F7F9FB;
+  --color-bg-card: #FFFFFF;
+  --color-bg-soft: #F3F4F6;
+
+  /* Text */
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+
+  /* Status */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+
+  /* Badges */
+  --badge-info-bg: #E0F2FE;
+  --badge-info-text: #0284C7;
+  --badge-action-bg: #DCFCE7;
+  --badge-action-text: #16A34A;
+
+  /* Announcement */
+  --announcement-bg: #FFF7ED;
+  --announcement-border: #F97316;
+
+  /* Toast */
+  --toast-bg: #1F2937;
+  --toast-text: #FFFFFF;
+}
