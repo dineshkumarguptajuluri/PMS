@@ -1,14 +1,13 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
-  className?: string;
 }
 
-const Card: React.FC<CardProps> = ({ children, className }) => {
+const Card: React.FC<CardProps> = ({ children, className, ...props }) => {
   return (
-    <div className={cn('bg-bg-card rounded-xl shadow-card p-6', className)}>
+    <div className={cn('bg-bg-card rounded-xl shadow-card p-6 transition-colors', className)} {...props}>
       {children}
     </div>
   );
@@ -19,7 +18,7 @@ export const CardHeader: React.FC<CardProps> = ({ children, className }) => (
 );
 
 export const CardTitle: React.FC<CardProps> = ({ children, className }) => (
-  <h3 className={cn('text-xl font-bold leading-none tracking-tight', className)}>
+  <h3 className={cn('text-xl font-bold leading-none tracking-tight text-text-primary', className)}>
     {children}
   </h3>
 );

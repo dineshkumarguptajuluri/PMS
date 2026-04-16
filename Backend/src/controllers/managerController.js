@@ -31,7 +31,8 @@ const getMyManagedClients = async (req, res) => {
       include: {
         clientProfile: {
           include: {
-            user: { select: { email: true } }
+            user: { select: { id: true, email: true } },
+            documents: true
           }
         }
       }

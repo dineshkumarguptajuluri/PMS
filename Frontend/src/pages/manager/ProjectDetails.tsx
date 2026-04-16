@@ -21,8 +21,8 @@ interface ProjectDetail {
 
 interface ClientOption {
   id: number;
-  email: string;
-  clientProfile?: { id: number; legalName: string };
+  legalName: string;
+  user?: { email?: string } | null;
 }
 
 const ManagerProjectDetails: React.FC = () => {
@@ -50,10 +50,11 @@ const ManagerProjectDetails: React.FC = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await apiClient.get('/admin/users?role=CLIENT');
-      setClients(response.data);
+      const response = await apiClient.get('/manager/clients');
+      setClients(Array.isArray(response.data) ? response.data : []);
     } catch {
       toast.error('Failed to load clients list');
+      setClients([]);
     }
   };
 
@@ -66,7 +67,7 @@ const ManagerProjectDetails: React.FC = () => {
   const handleAssignClient = async (clientId: number) => {
     setSubmittingAssignment(true);
     try {
-      await apiClient.post(`/projects/${id}/assign-client`, { clientId });
+      await apiClient.post(`/manager/projects/${id}/assign-client`, { clientId });
       toast.success('Client assigned successfully');
       setIsAssigning(false);
       fetchDetails();
@@ -78,10 +79,10 @@ const ManagerProjectDetails: React.FC = () => {
   };
 
   if (isLoading) return <div className="space-y-6 animate-pulse">
-    <div className="h-48 bg-gray-100 rounded-2xl" />
-    <div className="grid grid-cols-3 gap-6">
-      <div className="h-64 bg-gray-100 rounded-2xl col-span-2" />
-      <div className="h-64 bg-gray-100 rounded-2xl" />
+    <div className="h-48 bg-bg-soft rounded-2xl" />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="h-64 bg-bg-soft rounded-2xl lg:col-span-2" />
+      <div className="h-64 bg-bg-soft rounded-2xl" />
     </div>
   </div>;
 
@@ -89,10 +90,11 @@ const ManagerProjectDetails: React.FC = () => {
 
   const progress = calculateProgress(project.checkpoints);
 
-  const filteredClients = clients.filter(c => 
-    c.email.toLowerCase().includes(assignmentSearch.toLowerCase()) || 
-    (c.clientProfile?.legalName || '').toLowerCase().includes(assignmentSearch.toLowerCase())
-  ).filter(c => c.clientProfile); // Only show clients with profiles
+  const normalizedAssignmentSearch = assignmentSearch.trim().toLowerCase();
+  const filteredClients = clients.filter((client) =>
+    [client.legalName, client.user?.email || '']
+      .some((value) => value.toLowerCase().includes(normalizedAssignmentSearch))
+  );
 
   return (
     <div className="space-y-8">
@@ -141,7 +143,7 @@ const ManagerProjectDetails: React.FC = () => {
                         <Clock size={20} className="text-text-muted" />
                       )}
                     </div>
-                    <div className="flex-1 flex justify-between items-start border-b border-gray-50 pb-4">
+                    <div className="flex-1 flex justify-between items-start border-b border-border-subtle pb-4">
                       <div>
                         <p className={cn(
                           "font-semibold",
@@ -178,7 +180,7 @@ const ManagerProjectDetails: React.FC = () => {
                 <div className="relative mt-4">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" size={14} />
                   <input 
-                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 outline-none focus:ring-2 focus:ring-primary-blue"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border-subtle bg-bg-card text-text-primary outline-none focus:ring-2 focus:ring-primary-blue transition-colors"
                     placeholder="Search clients..."
                     value={assignmentSearch}
                     onChange={(e) => setAssignmentSearch(e.target.value)}
@@ -190,11 +192,11 @@ const ManagerProjectDetails: React.FC = () => {
                   <button
                     key={client.id}
                     disabled={submittingAssignment}
-                    onClick={() => handleAssignClient(client.clientProfile!.id)}
-                    className="w-full text-left p-3 rounded-xl border border-transparent bg-bg-soft hover:bg-white hover:border-primary-blue/30 transition-all group"
+                    onClick={() => handleAssignClient(client.id)}
+                    className="w-full text-left p-3 rounded-xl border border-transparent bg-bg-soft/50 hover:bg-bg-card hover:border-primary-blue/30 transition-all group"
                   >
-                    <p className="text-sm font-bold text-text-primary group-hover:text-primary-blue">{client.clientProfile!.legalName}</p>
-                    <p className="text-[10px] text-text-muted">{client.email}</p>
+                    <p className="text-sm font-bold text-text-primary group-hover:text-primary-blue">{client.legalName}</p>
+                    <p className="text-[10px] text-text-muted">{client.user?.email || 'Email unavailable'}</p>
                   </button>
                 ))}
                 {filteredClients.length === 0 && (
@@ -226,7 +228,7 @@ const ManagerProjectDetails: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-2 border-dashed border-gray-200 bg-bg-soft/30 hover:bg-white hover:border-primary-blue/50 transition-all group cursor-pointer" onClick={() => setIsAssigning(true)}>
+            <Card className="border-2 border-dashed border-border-subtle bg-bg-soft/30 hover:bg-bg-card hover:border-primary-blue/50 transition-all group cursor-pointer" onClick={() => setIsAssigning(true)}>
               <CardContent className="flex flex-col items-center justify-center py-10">
                 <div className="h-12 w-12 rounded-full bg-bg-soft flex items-center justify-center text-text-muted mb-4 group-hover:bg-primary-blue group-hover:text-white transition-all">
                   <UserPlus size={24} />

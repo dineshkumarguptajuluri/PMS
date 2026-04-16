@@ -1,19 +1,47 @@
 @import "tailwindcss";
 
+:root {
+  --bg-main: #F7F9FB;
+  --bg-card: #FFFFFF;
+  --bg-soft: #F3F4F6;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border-subtle: #F3F4F6;
+  --badge-info-bg: #E0F2FE;
+  --badge-info-text: #0284C7;
+  --badge-action-bg: #DCFCE7;
+  --badge-action-text: #16A34A;
+}
+
+.dark {
+  --bg-main: #0B0F17;
+  --bg-card: #151B28;
+  --bg-soft: #1E2636;
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --border-subtle: #1E2636;
+  --badge-info-bg: #0C4A6E;
+  --badge-info-text: #7DD3FC;
+  --badge-action-bg: #064E3B;
+  --badge-action-text: #34D399;
+}
+
 @theme {
   /* Primary colors */
   --color-primary-green: #A8C66C;
   --color-primary-blue: #5FA8D3;
   
   /* Background colors */
-  --color-bg-main: #F7F9FB;
-  --color-bg-card: #FFFFFF;
-  --color-bg-soft: #F3F4F6;
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-bg-soft: var(--bg-soft);
   
   /* Text colors */
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #6B7280;
-  --color-text-muted: #9CA3AF;
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   
   /* Status colors */
   --color-success: #22C55E;
@@ -21,11 +49,14 @@
   --color-danger: #EF4444;
   --color-info: #3B82F6;
   
+  /* Border colors */
+  --color-border-subtle: var(--border-subtle);
+  
   /* Badge styles */
-  --color-badge-info-bg: #E0F2FE;
-  --color-badge-info-text: #0284C7;
-  --color-badge-action-bg: #DCFCE7;
-  --color-badge-action-text: #16A34A;
+  --color-badge-info-bg: var(--badge-info-bg);
+  --color-badge-info-text: var(--badge-info-text);
+  --color-badge-action-bg: var(--badge-action-bg);
+  --color-badge-action-text: var(--badge-action-text);
   
   /* Announcement styles */
   --color-announcement-bg: #FFF7ED;
@@ -124,4 +155,22 @@ body {
 
 .duration-500 {
   animation-duration: 500ms;
+}
+
+/* Custom Scrollbar Utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-bg-soft);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }

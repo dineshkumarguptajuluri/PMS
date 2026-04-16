@@ -7,28 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  MANAGER
-  CLIENT
-}
-
-enum OnboardingStatus {
-  PENDING
-  APPROVED
-}
-
-enum InterestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum CheckpointStatus {
-  PENDING
-  DONE
-}
-
 model User {
   id              Int            @id @default(autoincrement())
   email           String         @unique
@@ -42,12 +20,18 @@ model User {
 model ClientProfile {
   id               Int               @id @default(autoincrement())
   userId           Int               @unique
-  user             User              @relation(fields: [userId], references: [id])
   legalName        String
-  gstNumber        String?
   industryType     String?
   employeeCount    Int?
-  onboardingStatus OnboardingStatus  @default(PENDING)
+  onboardingStatus OnboardingStatus  @default(PENDING_ONBOARDING)
+  companyData      Json?
+  locationData     Json?
+  contactsData     Json?
+  legalData        Json?
+  gstNumber        String?           @unique
+  panNumber        String?           @unique
+  cinNumber        String?           @unique
+  user             User              @relation(fields: [userId], references: [id])
   documents        Document[]
   projects         Project[]
   projectInterests ProjectInterest[]
@@ -56,33 +40,33 @@ model ClientProfile {
 model Document {
   id              Int           @id @default(autoincrement())
   clientProfileId Int
-  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id])
   fileUrl         String
   docType         String
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id])
 }
 
 model Project {
   id                  Int               @id @default(autoincrement())
   title               String
   clientId            Int?
-  clientProfile       ClientProfile?    @relation(fields: [clientId], references: [id])
   managerId           Int?
-  manager             User?             @relation("ProjectManager", fields: [managerId], references: [id])
   overallTargetDate   DateTime?
   utilityFocus        String
   optimizationDetails String
-  longDescription     String            @db.Text
-  projectInterests    ProjectInterest[]
+  longDescription     String
   checkpoints         Checkpoint[]
+  clientProfile       ClientProfile?    @relation(fields: [clientId], references: [id])
+  manager             User?             @relation("ProjectManager", fields: [managerId], references: [id])
+  projectInterests    ProjectInterest[]
 }
 
 model ProjectInterest {
   id        Int            @id @default(autoincrement())
   projectId Int
-  project   Project        @relation(fields: [projectId], references: [id])
   clientId  Int
-  client    ClientProfile  @relation(fields: [clientId], references: [id])
   status    InterestStatus @default(PENDING)
+  client    ClientProfile  @relation(fields: [clientId], references: [id])
+  project   Project        @relation(fields: [projectId], references: [id])
 
   @@unique([projectId, clientId])
 }
@@ -90,18 +74,42 @@ model ProjectInterest {
 model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Checkpoint {
   id         Int              @id @default(autoincrement())
   projectId  Int
-  project    Project          @relation(fields: [projectId], references: [id])
   title      String
   targetDate DateTime
   status     CheckpointStatus @default(PENDING)
   order      Int
+  project    Project          @relation(fields: [projectId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CLIENT
+}
+
+enum OnboardingStatus {
+  PENDING_ONBOARDING
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum InterestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CheckpointStatus {
+  PENDING
+  DONE
 }

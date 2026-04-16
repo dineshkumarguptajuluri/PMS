@@ -42,8 +42,12 @@ const ManagerDashboard: React.FC = () => {
   }, []);
 
   if (isLoading) return <div className="animate-pulse space-y-6">
-    <div className="grid grid-cols-3 gap-6"><div className="h-32 bg-gray-100 rounded-xl"></div><div className="h-32 bg-gray-100 rounded-xl"></div><div className="h-32 bg-gray-100 rounded-xl"></div></div>
-    <div className="h-64 bg-gray-100 rounded-xl"></div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="h-32 bg-bg-soft rounded-xl"></div>
+      <div className="h-32 bg-bg-soft rounded-xl"></div>
+      <div className="h-32 bg-bg-soft rounded-xl"></div>
+    </div>
+    <div className="h-64 bg-bg-soft rounded-xl"></div>
   </div>;
 
   const stats = [
@@ -86,12 +90,12 @@ const ManagerDashboard: React.FC = () => {
               {projects.slice(0, 5).map((project) => {
                 const progress = calculateProgress(project.checkpoints);
                 return (
-                  <div key={project.id} className="flex items-center justify-between p-4 bg-bg-soft rounded-xl hover:bg-white border border-transparent hover:border-gray-100 transition-all group">
+                  <div key={project.id} className="flex items-center justify-between p-4 bg-bg-soft/50 rounded-xl hover:bg-bg-card border border-transparent hover:border-border-subtle transition-all group">
                     <div className="flex-1">
                       <h4 className="font-bold text-text-primary group-hover:text-primary-blue">{project.title}</h4>
                       <div className="mt-2 flex items-center space-x-3">
-                        <div className="flex-1 bg-gray-200 h-1.5 rounded-full max-w-[200px]">
-                          <div className="bg-primary-blue h-full rounded-full" style={{ width: `${progress}%` }} />
+                        <div className="flex-1 bg-bg-soft h-1.5 rounded-full max-w-[200px] border border-border-subtle">
+                          <div className="bg-primary-blue h-full rounded-full shadow-[0_0_8px_rgba(95,168,211,0.5)]" style={{ width: `${progress}%` }} />
                         </div>
                         <span className="text-xs font-semibold text-text-muted">{progress}%</span>
                       </div>

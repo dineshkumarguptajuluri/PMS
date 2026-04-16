@@ -13,11 +13,11 @@ const Badge: React.FC<BadgeProps> = ({
   className,
 }) => {
   const variants = {
-    info: 'bg-badge-info-bg text-badge-info-text',
-    action: 'bg-badge-action-bg text-badge-action-text',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    danger: 'bg-danger/10 text-danger',
+    info: 'bg-badge-info-bg text-badge-info-text transition-colors',
+    action: 'bg-badge-action-bg text-badge-action-text transition-colors',
+    success: 'bg-success/10 text-success transition-colors',
+    warning: 'bg-warning/10 text-warning transition-colors',
+    danger: 'bg-danger/10 text-danger transition-colors',
   };
 
   return (

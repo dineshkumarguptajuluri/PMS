@@ -1,10 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { LogOut, User, Bell } from 'lucide-react';
+import { useThemeStore } from '../../store/themeStore';
+import { LogOut, User, Bell, Moon, Sun } from 'lucide-react';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -13,7 +15,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-8 sticky top-0 z-30">
+    <header className="h-16 border-b border-border-subtle bg-bg-card flex items-center justify-between px-8 sticky top-0 z-30 transition-colors">
       <div className="flex items-center space-x-4">
         <h2 className="text-lg font-semibold text-text-primary capitalize">
           {user?.role.toLowerCase()} Portal
@@ -21,6 +23,14 @@ const Header: React.FC = () => {
       </div>
 
       <div className="flex items-center space-x-6">
+        <button 
+          onClick={toggleTheme}
+          className="p-2 text-text-secondary hover:text-primary-blue bg-bg-soft/50 hover:bg-bg-soft rounded-lg transition-all"
+          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+        >
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
+
         <button className="text-text-secondary hover:text-primary-blue transition-colors">
           <Bell size={20} />
         </button>

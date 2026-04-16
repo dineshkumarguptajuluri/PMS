@@ -8,6 +8,7 @@ export interface User {
   email: string;
   role: UserRole;
   name?: string;
+  onboardingStatus?: 'PENDING_ONBOARDING' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | null;
 }
 
 interface AuthState {

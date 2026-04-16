@@ -3,6 +3,7 @@ import Card, { CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import apiClient from '../../api/client';
 import { useToast } from '../../hooks/useToast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useThemeStore } from '../../store/themeStore';
 import { TrendingUp, Award, Target } from 'lucide-react';
 
 interface ManagerStat {
@@ -16,6 +17,7 @@ interface ManagerStat {
 const AdminPerformance: React.FC = () => {
   const [data, setData] = useState<ManagerStat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { theme } = useThemeStore();
   const toast = useToast();
 
   useEffect(() => {
@@ -91,21 +93,30 @@ const AdminPerformance: React.FC = () => {
         </Card>
       </div>
 
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle className="flex items-center">
             <TrendingUp className="mr-2 text-primary-blue" size={18} />
             Manager Progress Comparison
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[350px]">
+        <CardContent className="h-[350px] min-h-[350px] min-w-0">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} />
                 <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} axisLine={false} tickLine={false} />
                 <YAxis stroke="#9CA3AF" fontSize={12} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                <Tooltip 
+                  cursor={{fill: theme === 'dark' ? '#1E2636' : '#F3F4F6'}} 
+                  contentStyle={{
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    backgroundColor: theme === 'dark' ? '#151B28' : '#FFFFFF',
+                    color: theme === 'dark' ? '#F9FAFB' : '#1F2937'
+                  }} 
+                />
                 <Bar dataKey="progress" fill="#5FA8D3" radius={[4, 4, 0, 0]} barSize={30} name="Avg Progress %" />
               </BarChart>
             </ResponsiveContainer>

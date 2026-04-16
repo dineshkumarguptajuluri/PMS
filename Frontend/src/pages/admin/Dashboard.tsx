@@ -11,6 +11,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useThemeStore } from '../../store/themeStore';
 
 interface ManagerStat {
   managerId: number;
@@ -28,6 +29,7 @@ const AdminDashboard: React.FC = () => {
   const [managerStats, setManagerStats] = useState<ManagerStat[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const { theme } = useThemeStore();
   const toast = useToast();
 
   useEffect(() => {
@@ -51,11 +53,11 @@ const AdminDashboard: React.FC = () => {
 
   if (isLoading) {
     return <div className="flex animate-pulse flex-col space-y-4">
-      <div className="h-32 bg-gray-100 rounded-xl w-full"></div>
+      <div className="h-32 bg-bg-soft rounded-xl w-full"></div>
       <div className="grid grid-cols-3 gap-6">
-        <div className="h-40 bg-gray-100 rounded-xl"></div>
-        <div className="h-40 bg-gray-100 rounded-xl"></div>
-        <div className="h-40 bg-gray-100 rounded-xl"></div>
+        <div className="h-40 bg-bg-soft rounded-xl"></div>
+        <div className="h-40 bg-bg-soft rounded-xl"></div>
+        <div className="h-40 bg-bg-soft rounded-xl"></div>
       </div>
     </div>;
   }
@@ -86,7 +88,7 @@ const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat) => (
           <Card key={stat.label} className="relative overflow-hidden group">
-            <CardContent className="p-0 flex items-center space-x-4">
+            <CardContent className="h-[120px] flex items-center space-x-4">
               <div className={`p-4 rounded-xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-110`}>
                 <stat.icon size={28} />
               </div>
@@ -103,22 +105,28 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between pb-8">
+        <Card className="col-span-1 min-w-0">
+        <CardHeader className="flex flex-row items-center justify-between pb-8">
             <CardTitle>Manager Performance</CardTitle>
             <Badge variant="info">By Manager</Badge>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
+          <CardContent className="min-w-0">
+            <div className="h-[300px] min-h-[300px] w-full min-w-0">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#374151' : '#E5E7EB'} />
                     <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip 
-                      cursor={{fill: '#F3F4F6'}} 
-                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
+                      cursor={{fill: theme === 'dark' ? '#1E2636' : '#F3F4F6'}} 
+                      contentStyle={{
+                        borderRadius: '8px', 
+                        border: 'none', 
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        backgroundColor: theme === 'dark' ? '#151B28' : '#FFFFFF',
+                        color: theme === 'dark' ? '#F9FAFB' : '#1F2937'
+                      }} 
                     />
                     <Bar dataKey="onTrack" fill="#A8C66C" radius={[4, 4, 0, 0]} barSize={20} name="On Track" />
                     <Bar dataKey="delayed" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={20} name="Delayed" />
@@ -153,7 +161,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="mt-1 p-2 bg-bg-soft rounded-lg text-text-muted">
                   <Clock size={16} />
                 </div>
-                <div className="flex-1 border-b border-gray-50 pb-4">
+                <div className="flex-1 border-b border-border-subtle pb-4">
                   <p className="text-sm font-medium text-text-primary">{m.managerEmail}</p>
                   <p className="text-xs text-text-muted mt-1">{m.totalProjects} projects · {m.averageProgress}% avg progress</p>
                 </div>

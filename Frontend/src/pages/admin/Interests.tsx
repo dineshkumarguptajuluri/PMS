@@ -47,7 +47,7 @@ const AdminInterests: React.FC = () => {
 
   if (isLoading) {
     return <div className="space-y-4 animate-pulse">
-      {[1, 2, 3].map(i => <div key={i} className="h-40 bg-gray-100 rounded-xl"></div>)}
+      {[1, 2, 3].map(i => <div key={i} className="h-40 bg-bg-soft rounded-xl"></div>)}
     </div>;
   }
 

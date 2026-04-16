@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleRoute from './components/auth/RoleRoute';
+import ClientGate from './components/auth/ClientGate';
 import DashboardLayout from './layouts/DashboardLayout';
 import ToastContainer from './components/ui/ToastContainer';
 
@@ -33,10 +34,34 @@ import ClientActiveProjects from './pages/client/ActiveProjects';
 import ClientProjectDetails from './pages/client/ProjectDetails';
 import ClientDashboard from './pages/client/Dashboard';
 import ClientInterests from './pages/client/Interests';
+import ClientOnboarding from './pages/client/Onboarding';
+
+// Admin Onboarding
+import AdminCreateClient from './pages/admin/CreateClient';
+import OnboardClient from './pages/admin/OnboardClient';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useThemeStore } from './store/themeStore';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 function App() {
+  const initializeTheme = useThemeStore((state) => state.initializeTheme);
+
+  useEffect(() => {
+    initializeTheme();
+  }, [initializeTheme]);
+
   return (
-    <Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
@@ -69,7 +94,23 @@ function App() {
             }
           />
           <Route
-            path="/admin/clients/pending"
+            path="/admin/clients/create"
+            element={
+              <RoleRoute allowedRoles={['ADMIN']}>
+                <AdminCreateClient />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/admin/clients/onboard/:userId"
+            element={
+              <RoleRoute allowedRoles={['ADMIN']}>
+                <OnboardClient />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/admin/clients/onboarding-requests"
             element={
               <RoleRoute allowedRoles={['ADMIN']}>
                 <AdminPendingClients />
@@ -159,6 +200,14 @@ function App() {
             }
           />
           <Route
+            path="/manager/clients/onboard/:userId"
+            element={
+              <RoleRoute allowedRoles={['MANAGER']}>
+                <OnboardClient />
+              </RoleRoute>
+            }
+          />
+          <Route
             path="/manager/clients"
             element={
               <RoleRoute allowedRoles={['MANAGER']}>
@@ -169,45 +218,21 @@ function App() {
 
           {/* Client Routes */}
           <Route
-            path="/projects/discovery"
             element={
               <RoleRoute allowedRoles={['CLIENT']}>
-                <ClientDiscovery />
+                <ClientGate>
+                  <Outlet />
+                </ClientGate>
               </RoleRoute>
             }
-          />
-          <Route
-            path="/projects/active"
-            element={
-              <RoleRoute allowedRoles={['CLIENT']}>
-                <ClientActiveProjects />
-              </RoleRoute>
-            }
-          />
-          <Route
-            path="/projects/:id"
-            element={
-              <RoleRoute allowedRoles={['CLIENT']}>
-                <ClientProjectDetails />
-              </RoleRoute>
-            }
-          />
-          <Route
-            path="/client/dashboard"
-            element={
-              <RoleRoute allowedRoles={['CLIENT']}>
-                <ClientDashboard />
-              </RoleRoute>
-            }
-          />
-          <Route
-            path="/client/interests"
-            element={
-              <RoleRoute allowedRoles={['CLIENT']}>
-                <ClientInterests />
-              </RoleRoute>
-            }
-          />
+          >
+            <Route path="/client/onboarding" element={<ClientOnboarding />} />
+            <Route path="/projects/discovery" element={<ClientDiscovery />} />
+            <Route path="/projects/active" element={<ClientActiveProjects />} />
+            <Route path="/projects/:id" element={<ClientProjectDetails />} />
+            <Route path="/client/dashboard" element={<ClientDashboard />} />
+            <Route path="/client/interests" element={<ClientInterests />} />
+          </Route>
         </Route>
 
         {/* Default / Redirects */}
@@ -218,6 +243,7 @@ function App() {
       {/* Global Components */}
       <ToastContainer />
     </Router>
+    </QueryClientProvider>
   );
 }
 

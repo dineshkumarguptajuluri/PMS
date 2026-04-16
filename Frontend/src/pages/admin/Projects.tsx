@@ -2,68 +2,66 @@ import React, { useEffect, useState } from 'react';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import apiClient from '../../api/client';
 import { useToast } from '../../hooks/useToast';
-import { Settings2, UserPlus, FolderKanban } from 'lucide-react';
+import { Settings2, UserPlus, FolderKanban, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useProjects, useManagers, useClients, useAssignClient } from '../../hooks/useAdminData';
 
-interface Project {
-  id: number;
-  title: string;
-  utilityFocus: string;
-  managerId: number | null;
-  clientId: number | null;
-}
-
-interface User {
-  id: number;
-  email: string;
-  role: string;
-}
+// Removed local interfaces as they are now in useAdminData.ts
 
 const AdminProjects: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [managers, setManagers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [assignClientId, setAssignClientId] = useState('');
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [clientPage, setClientPage] = useState(1);
+  const CLIENT_LIMIT = 8;
 
   const toast = useToast();
 
-  const fetchData = async () => {
-    try {
-      const [projRes, managerRes] = await Promise.all([
-        apiClient.get('/projects/discovery'),
-        apiClient.get('/admin/users?role=MANAGER'),
-      ]);
-      setProjects(projRes.data);
-      setManagers(managerRes.data);
-    } catch {
-      toast.error('Failed to load project data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Queries
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: managers = [], isLoading: managersLoading } = useManagers();
+  const { data: clientData, isLoading: clientsLoading, isPlaceholderData } = useClients(clientPage, CLIENT_LIMIT, debouncedSearch);
+  
+  // Mutation
+  const assignMutation = useAssignClient();
 
+  // Debouncing search
   useEffect(() => {
-    fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(clientSearchTerm);
+      setClientPage(1); // Reset to first page on search
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [clientSearchTerm]);
 
   const handleAssign = async () => {
     if (!selectedProject || !assignClientId) return;
-    try {
-      await apiClient.post(`/admin/projects/${selectedProject.id}/assign-client`, {
-        clientId: parseInt(assignClientId)
-      });
-      toast.success('Client assigned to project');
-      setSelectedProject(null);
-      setAssignClientId('');
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to assign client');
-    }
+    
+    assignMutation.mutate(
+      { projectId: selectedProject.id, clientId: parseInt(assignClientId) },
+      {
+        onSuccess: () => {
+          toast.success('Client assigned successfully');
+          setSelectedProject(null);
+          setAssignClientId('');
+        },
+        onError: (error: any) => {
+          toast.error(error.response?.data?.error || 'Failed to assign client');
+        }
+      }
+    );
   };
+
+  if (projectsLoading || managersLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 animate-pulse text-text-muted">
+        <FolderKanban size={48} className="mb-4" />
+        <p>Loading projects...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -143,26 +141,106 @@ const AdminProjects: React.FC = () => {
             <CardContent>
               {selectedProject ? (
                 <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="p-4 bg-primary-blue/5 rounded-xl border border-primary-blue/10">
+                  <div className="p-4 bg-primary-blue/5 rounded-xl border border-border-subtle">
                     <p className="text-xs font-bold text-primary-blue uppercase tracking-widest mb-1">Selected Project</p>
-                    <p className="text-sm font-bold truncate">{selectedProject.title}</p>
+                    <p className="text-sm font-bold truncate text-text-primary">{selectedProject.title}</p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-muted uppercase">Client Profile ID</label>
-                      <input 
-                        type="number"
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none"
-                        placeholder="Enter client profile ID"
-                        value={assignClientId}
-                        onChange={(e) => setAssignClientId(e.target.value)}
-                      />
+                    <div className="space-y-3">
+                      <label className="text-xs font-bold text-text-muted uppercase">Select Client</label>
+                      <div className="relative group">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary-blue transition-colors" size={16} />
+                        <input 
+                          type="text"
+                          className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-border-subtle bg-bg-soft/30 focus:bg-bg-card text-text-primary focus:ring-4 focus:ring-primary-blue/5 focus:border-primary-blue outline-none transition-all placeholder:text-text-muted/50"
+                          placeholder="Search clients..."
+                          value={clientSearchTerm}
+                          onChange={(e) => setClientSearchTerm(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="max-h-[320px] overflow-y-auto space-y-2 pr-2 custom-scrollbar relative">
+                        {clientsLoading ? (
+                          <div className="flex flex-col items-center justify-center py-12 text-blue-500/50">
+                            <Loader2 size={24} className="animate-spin mb-2" />
+                            <p className="text-[10px] font-bold uppercase tracking-widest">Fetching Clients...</p>
+                          </div>
+                        ) : clientData?.users && clientData.users.length > 0 ? (
+                          <>
+                            {clientData.users.map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => setAssignClientId(c.clientProfile?.id.toString() || '')}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
+                                  assignClientId === c.clientProfile?.id.toString()
+                                    ? 'bg-primary-blue/10 border-primary-blue outline-none'
+                                    : 'bg-bg-soft/20 border-transparent hover:bg-bg-soft/50 hover:border-gray-200'
+                                } ${isPlaceholderData ? 'opacity-50' : 'opacity-100'}`}
+                              >
+                                <div className="text-left">
+                                  <p className="text-sm font-bold text-text-primary">{c.clientProfile?.legalName || 'No Legal Name'}</p>
+                                  <p className="text-[10px] text-text-muted uppercase font-medium">{c.email}</p>
+                                </div>
+                                {assignClientId === c.clientProfile?.id.toString() && (
+                                  <div className="h-2 w-2 rounded-full bg-primary-blue animate-pulse" />
+                                )}
+                              </button>
+                            ))}
+                          </>
+                        ) : (
+                          <div className="py-8 text-center bg-bg-soft/20 rounded-xl border border-dashed border-border-subtle">
+                            <p className="text-xs text-text-muted">No clients found matching "{clientSearchTerm}"</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Client Pagination Controls */}
+                      {clientData && clientData.pages > 1 && (
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100/50">
+                          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                            {clientPage} / {clientData.pages}
+                          </p>
+                          <div className="flex space-x-1">
+                            <button
+                              disabled={clientPage === 1 || isPlaceholderData}
+                              onClick={() => setClientPage(p => Math.max(1, p - 1))}
+                              className="p-1 text-text-muted hover:text-primary-blue disabled:opacity-30 transition-colors"
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            <button
+                              disabled={clientPage === clientData.pages || isPlaceholderData}
+                              onClick={() => setClientPage(p => Math.min(clientData.pages, p + 1))}
+                              className="p-1 text-text-muted hover:text-primary-blue disabled:opacity-30 transition-colors"
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex space-x-2 pt-2">
-                      <Button className="flex-1" onClick={handleAssign}>Assign</Button>
-                      <Button variant="outline" onClick={() => setSelectedProject(null)}>Cancel</Button>
+                    <div className="flex space-x-3 pt-4 border-t border-gray-100/50">
+                      <Button 
+                        className="flex-1 shadow-lg shadow-primary-blue/20" 
+                        disabled={!assignClientId || assignMutation.isPending}
+                        onClick={handleAssign}
+                      >
+                        {assignMutation.isPending ? (
+                          <div className="flex items-center space-x-2">
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Assigning...</span>
+                          </div>
+                        ) : 'Assign Client'}
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setSelectedProject(null);
+                        setAssignClientId('');
+                        setClientSearchTerm('');
+                      }}>
+                        Cancel
+                      </Button>
                     </div>
                   </div>
                 </div>

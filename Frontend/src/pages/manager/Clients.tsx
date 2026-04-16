@@ -1,35 +1,76 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import apiClient from '../../api/client';
 import { useToast } from '../../hooks/useToast';
-import { Mail, Search, User, FileText } from 'lucide-react';
+import { Mail, Search, User, FileText, ExternalLink } from 'lucide-react';
 
-interface ClientEntry {
+interface ClientDocument {
   id: number;
-  email: string;
-  role: string;
-  clientProfile?: {
-    legalName: string;
-    industryType?: string;
-    gstNumber?: string;
-    documents: Array<{ id: number; fileUrl: string; docType: string }>;
-  };
+  fileUrl: string;
+  docType: string;
 }
 
+interface ManagedClient {
+  id: number;
+  legalName: string;
+  industryType?: string | null;
+  gstNumber?: string | null;
+  onboardingStatus: string;
+  companyData?: { industry?: string } | null;
+  legalData?: { gst?: string } | null;
+  user?: { id: number; email?: string } | null;
+  documents?: ClientDocument[];
+}
+
+const getApiOrigin = () => {
+  const configuredBaseUrl = apiClient.defaults.baseURL;
+
+  if (typeof configuredBaseUrl === 'string' && configuredBaseUrl.length > 0) {
+    try {
+      return new URL(configuredBaseUrl).origin;
+    } catch {
+      // Fall back to the current app origin when the base URL is relative.
+    }
+  }
+
+  return window.location.origin;
+};
+
+const getDocumentUrl = (fileUrl: string) => {
+  if (!fileUrl) {
+    return '#';
+  }
+
+  if (/^https?:\/\//i.test(fileUrl)) {
+    return fileUrl;
+  }
+
+  const normalizedPath = fileUrl.startsWith('/api/uploads/')
+    ? fileUrl.replace(/^\/api/, '')
+    : fileUrl.startsWith('/uploads/')
+      ? fileUrl
+      : `/uploads/${fileUrl.replace(/^\/+/, '')}`;
+
+  return `${getApiOrigin()}${normalizedPath}`;
+};
+
 const ManagerClients: React.FC = () => {
-  const [clients, setClients] = useState<ClientEntry[]>([]);
+  const navigate = useNavigate();
+  const [clients, setClients] = useState<ManagedClient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const toast = useToast();
 
   const fetchClients = async () => {
     try {
-      // Managers can use this endpoint to see all existing clients
-      const response = await apiClient.get('/admin/users?role=CLIENT');
-      setClients(response.data);
+      const response = await apiClient.get('/manager/clients');
+      setClients(Array.isArray(response.data) ? response.data : []);
     } catch {
       toast.error('Failed to load active clients');
+      setClients([]);
     } finally {
       setIsLoading(false);
     }
@@ -40,30 +81,31 @@ const ManagerClients: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredClients = clients.filter(c => 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (c.clientProfile?.legalName || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredClients = clients.filter((client) =>
+    [client.legalName, client.user?.email || '']
+      .some((value) => value.toLowerCase().includes(normalizedSearchTerm))
   );
 
   if (isLoading) {
     return <div className="space-y-4 animate-pulse">
-      {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-gray-100 rounded-xl"></div>)}
+      {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 bg-gray-100 rounded-xl"></div>)}
     </div>;
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Active Clients</h1>
-          <p className="text-text-muted">Directory of all registered client organizations in the system.</p>
+          <p className="text-text-muted">Organizations currently assigned to your projects.</p>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
-          <input 
+          <input
             type="text"
             placeholder="Search clients..."
-            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue outline-none w-full md:w-64 bg-white"
+            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-4 outline-none focus:ring-2 focus:ring-primary-blue md:w-64"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -71,61 +113,92 @@ const ManagerClients: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {filteredClients.map((client) => (
-          <Card key={client.id} className="hover:shadow-md transition-shadow group">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="flex items-center space-x-5">
-                <div className="h-14 w-14 rounded-2xl bg-bg-soft text-primary-blue flex items-center justify-center font-bold text-xl transition-transform group-hover:scale-110">
-                  {client.clientProfile?.legalName ? client.clientProfile.legalName[0] : (client.email[0].toUpperCase())}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-text-primary">
-                    {client.clientProfile?.legalName || 'Onboarding Pending'}
-                  </h3>
-                  <div className="flex items-center text-sm text-text-secondary mt-1">
-                    <Mail size={14} className="mr-2 opacity-50" />
-                    {client.email}
-                  </div>
-                </div>
-              </div>
+        {filteredClients.map((client) => {
+          const clientName = client.legalName || 'Unnamed Client';
+          const clientEmail = client.user?.email || 'Email unavailable';
+          const industry = client.industryType || client.companyData?.industry;
+          const gstNumber = client.gstNumber || client.legalData?.gst;
+          const documents = Array.isArray(client.documents) ? client.documents : [];
+          const onboardingUserId = client.user?.id;
 
-              <div className="flex flex-wrap items-center gap-3">
-                {client.clientProfile?.industryType && (
-                  <Badge variant="info">{client.clientProfile.industryType}</Badge>
-                )}
-                {client.clientProfile?.gstNumber && (
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest bg-bg-soft px-2 py-1 rounded">
-                    GST: {client.clientProfile.gstNumber}
-                  </span>
-                )}
-                <div className="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
-                  <div className="flex -space-x-2">
-                    {client.clientProfile?.documents.slice(0, 3).map((_, i) => (
-                      <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-bg-soft flex items-center justify-center">
-                        <FileText size={10} className="text-text-muted" />
-                      </div>
-                    ))}
-                    {(client.clientProfile?.documents.length || 0) > 3 && (
-                      <div className="h-6 w-6 rounded-full border-2 border-white bg-bg-soft flex items-center justify-center text-[8px] font-bold text-text-muted">
-                        +{(client.clientProfile?.documents.length || 0) - 3}
-                      </div>
-                    )}
+          return (
+            <Card key={client.id} className="group hover:shadow-md transition-shadow">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center space-x-5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-bg-soft text-xl font-bold text-primary-blue transition-transform group-hover:scale-110">
+                    {clientName[0]?.toUpperCase() || 'C'}
                   </div>
-                  <span className="text-xs text-text-muted flex items-center">
-                    <User size={12} className="mr-1" />
-                    ID: {client.id}
-                  </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-bold text-text-primary">{clientName}</h3>
+                    <div className="mt-1 flex items-center text-sm text-text-secondary">
+                      <Mail size={14} className="mr-2 shrink-0 opacity-50" />
+                      <span className="truncate">{clientEmail}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge variant={client.onboardingStatus === 'APPROVED' ? 'success' : 'warning'}>
+                    {client.onboardingStatus.replaceAll('_', ' ')}
+                  </Badge>
+                  {industry && (
+                    <Badge variant="info">{industry}</Badge>
+                  )}
+                  {gstNumber && (
+                    <span className="rounded bg-bg-soft px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                      GST: {gstNumber}
+                    </span>
+                  )}
+                  <div className="ml-2 flex items-center space-x-2 border-l border-gray-100 pl-4">
+                    <div className="flex -space-x-2">
+                      {documents.slice(0, 3).map((doc) => (
+                        <a
+                          key={doc.id}
+                          href={getDocumentUrl(doc.fileUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-bg-soft text-text-muted transition-colors hover:bg-primary-blue/10 hover:text-primary-blue"
+                          title={doc.docType || 'Open document'}
+                        >
+                          <FileText size={10} />
+                        </a>
+                      ))}
+                      {documents.length > 3 && (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-bg-soft text-[8px] font-bold text-text-muted">
+                          +{documents.length - 3}
+                        </div>
+                      )}
+                    </div>
+                    <span className="flex items-center text-xs text-text-muted">
+                      <User size={12} className="mr-1" />
+                      ID: {client.id}
+                    </span>
+                  </div>
+                  {client.onboardingStatus === 'PENDING_ONBOARDING' && onboardingUserId && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => navigate(`/manager/clients/onboard/${onboardingUserId}`)}
+                    >
+                      <ExternalLink size={14} className="mr-2" />
+                      Continue Onboarding
+                    </Button>
+                  )}
                 </div>
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
 
         {filteredClients.length === 0 && (
           <Card className="flex flex-col items-center justify-center py-20 text-center text-text-muted">
             <Search size={48} className="mb-4 opacity-20" />
             <h3 className="text-lg font-bold">No Clients Found</h3>
-            <p className="text-sm">We couldn't find any clients matching your search criteria.</p>
+            <p className="text-sm">
+              {clients.length === 0
+                ? 'No clients are assigned to your projects yet.'
+                : "We couldn't find any clients matching your search criteria."}
+            </p>
           </Card>
         )}
       </div>

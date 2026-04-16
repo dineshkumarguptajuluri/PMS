@@ -17,9 +17,9 @@ const Button: React.FC<ButtonProps> = ({
 }) => {
   const variants = {
     primary: 'bg-primary-gradient text-white hover:opacity-90',
-    secondary: 'bg-bg-soft text-text-primary hover:bg-gray-200',
-    danger: 'bg-danger text-white hover:bg-red-600',
-    outline: 'border-2 border-primary-blue text-primary-blue hover:bg-primary-blue/10',
+    secondary: 'bg-bg-soft text-text-primary hover:opacity-80 transition-colors',
+    danger: 'bg-danger text-white hover:opacity-90',
+    outline: 'border-2 border-primary-blue text-primary-blue hover:bg-primary-blue/10 bg-transparent transition-all',
   };
 
   const sizes = {

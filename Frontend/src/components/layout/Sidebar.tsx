@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import type { UserRole } from '../../store/authStore';
 import { 
   LayoutDashboard, 
   Users, 
@@ -10,7 +9,8 @@ import {
   MessageSquare, 
   BarChart3, 
   Compass, 
-  Search
+  Search,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -20,36 +20,52 @@ interface SidebarItem {
   icon: React.ElementType;
 }
 
-const SIDEBAR_CONFIG: Record<UserRole, SidebarItem[]> = {
-  ADMIN: [
-    { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Users', path: '/admin/users', icon: Users },
-    { label: 'Clients (Pending)', path: '/admin/clients/pending', icon: UserPlus },
-    { label: 'Projects', path: '/admin/projects', icon: FolderKanban },
-    { label: 'Interests', path: '/admin/interests', icon: MessageSquare },
-    { label: 'Analytics', path: '/admin/performance', icon: BarChart3 },
-  ],
-  MANAGER: [
-    { label: 'Dashboard', path: '/manager/dashboard', icon: LayoutDashboard },
-    { label: 'My Projects', path: '/manager/projects', icon: FolderKanban },
-    { label: 'Clients', path: '/manager/clients', icon: Users },
-    { label: 'Interests', path: '/manager/interests', icon: MessageSquare },
-    { label: 'Create Client', path: '/manager/create-client', icon: UserPlus },
-  ],
-  CLIENT: [
-    { label: 'Dashboard', path: '/client/dashboard', icon: LayoutDashboard },
-    { label: 'Discover Projects', path: '/projects/discovery', icon: Search },
-    { label: 'My Projects', path: '/projects/active', icon: Compass },
-    { label: 'My Interests', path: '/client/interests', icon: MessageSquare },
-  ],
-};
-
 const Sidebar: React.FC = () => {
   const { user } = useAuthStore();
-  const items = user ? SIDEBAR_CONFIG[user.role] : [];
+
+  const getSidebarItems = (): SidebarItem[] => {
+    if (!user) return [];
+
+    switch (user.role) {
+      case 'ADMIN':
+        return [
+          { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+          { label: 'Users', path: '/admin/users', icon: Users },
+          { label: 'Create Client', path: '/admin/clients/create', icon: UserPlus },
+          { label: 'Onboarding Requests', path: '/admin/clients/onboarding-requests', icon: ClipboardList },
+          { label: 'Projects', path: '/admin/projects', icon: FolderKanban },
+          { label: 'Interests', path: '/admin/interests', icon: MessageSquare },
+          { label: 'Analytics', path: '/admin/performance', icon: BarChart3 },
+        ];
+      case 'MANAGER':
+        return [
+          { label: 'Dashboard', path: '/manager/dashboard', icon: LayoutDashboard },
+          { label: 'My Projects', path: '/manager/projects', icon: FolderKanban },
+          { label: 'Clients', path: '/manager/clients', icon: Users },
+          { label: 'Interests', path: '/manager/interests', icon: MessageSquare },
+          { label: 'Create Client', path: '/manager/create-client', icon: UserPlus },
+        ];
+      case 'CLIENT':
+        if (user.onboardingStatus !== 'APPROVED') {
+          return [
+            { label: 'Onboarding', path: '/client/onboarding', icon: ClipboardList },
+          ];
+        }
+        return [
+          { label: 'Dashboard', path: '/client/dashboard', icon: LayoutDashboard },
+          { label: 'Discover Projects', path: '/projects/discovery', icon: Search },
+          { label: 'My Projects', path: '/projects/active', icon: Compass },
+          { label: 'My Interests', path: '/client/interests', icon: MessageSquare },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const items = getSidebarItems();
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-[calc(100vh-64px)] overflow-y-auto sticky top-16">
+    <aside className="w-64 bg-bg-card border-r border-border-subtle flex flex-col h-[calc(100vh-64px)] overflow-y-auto sticky top-16 transition-colors">
       <nav className="flex-1 py-6 px-4 space-y-1">
         {items.map((item) => (
           <NavLink
@@ -70,7 +86,7 @@ const Sidebar: React.FC = () => {
         ))}
       </nav>
       
-      <div className="p-4 border-t border-gray-100">
+      <div className="p-4 border-t border-border-subtle">
         <div className="bg-bg-soft rounded-lg p-4">
           <p className="text-xs text-text-muted">System Status</p>
           <div className="flex items-center mt-1 space-x-2">

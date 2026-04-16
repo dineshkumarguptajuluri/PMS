@@ -4,15 +4,21 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import apiClient from '../../api/client';
 import { useToast } from '../../hooks/useToast';
-import { UserPlus, Mail, Trash2 } from 'lucide-react';
+import { UserPlus, Mail, Trash2, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: number;
   email: string;
   role: 'ADMIN' | 'MANAGER' | 'CLIENT';
+  clientProfile?: {
+    onboardingStatus: string;
+    legalName?: string;
+  };
 }
 
 const AdminUsers: React.FC = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +36,9 @@ const AdminUsers: React.FC = () => {
     try {
       // Backend route is GET /api/admin/users
       const response = await apiClient.get('/admin/users'); 
-      setUsers(response.data);
+      // Handle both array (legacy) and paginated object responses
+      const data = response.data;
+      setUsers(Array.isArray(data) ? data : data.users);
     } catch {
       toast.error('Failed to load users');
     } finally {
@@ -96,7 +104,7 @@ const AdminUsers: React.FC = () => {
                 <input
                   required
                   type="email"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-blue outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-border-subtle bg-bg-card text-text-primary focus:ring-2 focus:ring-primary-blue outline-none transition-colors"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   placeholder="john@example.com"
@@ -107,7 +115,7 @@ const AdminUsers: React.FC = () => {
                 <input
                   required
                   type="password"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-blue outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-border-subtle bg-bg-card text-text-primary focus:ring-2 focus:ring-primary-blue outline-none transition-colors"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                   placeholder="••••••••"
@@ -116,13 +124,13 @@ const AdminUsers: React.FC = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Role</label>
                 <select
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-blue outline-none bg-white"
+                  className="w-full px-4 py-2 rounded-lg border border-border-subtle bg-bg-card text-text-primary focus:ring-2 focus:ring-primary-blue outline-none transition-colors"
                   value={formData.role}
                   onChange={(e) => setFormData({...formData, role: e.target.value as any})}
                 >
-                  <option value="ADMIN">Administrator</option>
-                  <option value="MANAGER">Project Manager</option>
-                  <option value="CLIENT">Client</option>
+                  <option value="ADMIN" className="bg-bg-card">Administrator</option>
+                  <option value="MANAGER" className="bg-bg-card">Project Manager</option>
+                  <option value="CLIENT" className="bg-bg-card">Client</option>
                 </select>
               </div>
               <div className="flex items-end">
@@ -169,12 +177,28 @@ const AdminUsers: React.FC = () => {
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <button 
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="p-2 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      {user.role === 'CLIENT' && user.clientProfile?.onboardingStatus === 'PENDING_ONBOARDING' ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => navigate(`/admin/clients/onboard/${user.id}`)}
+                        >
+                          <ExternalLink size={14} className="mr-1" />
+                          Onboard
+                        </Button>
+                      ) : user.role === 'CLIENT' ? (
+                        <span className="text-[10px] font-bold text-text-muted uppercase bg-bg-soft px-2 py-1 rounded transition-colors border border-border-subtle">
+                          {user.clientProfile?.onboardingStatus.replace('_', ' ')}
+                        </span>
+                      ) : null}
+                      <button 
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="p-2 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

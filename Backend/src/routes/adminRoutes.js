@@ -12,7 +12,10 @@ const {
   updateUser,
   createProject,
   updateProject,
-  deleteProject
+  deleteProject,
+  createClientBase,
+  getOnboardingApprovals,
+  approveClientOnboarding
 } = require('../controllers/adminController');
 const { verifyToken, checkRole } = require('../middlewares/authMiddleware');
 
@@ -26,6 +29,7 @@ router.patch('/projects/:id/reassign', verifyToken, checkRole(['ADMIN']), reassi
 
 // Project Management Endpoints
 router.post('/projects', verifyToken, checkRole(['ADMIN']), createProject);
+router.post('/projects/:id/assign-client', verifyToken, checkRole(['ADMIN', 'MANAGER']), assignClientDirectly);
 router.patch('/projects/:id', verifyToken, checkRole(['ADMIN']), updateProject);
 router.delete('/projects/:id', verifyToken, checkRole(['ADMIN']), deleteProject);
 
@@ -34,8 +38,9 @@ router.get('/users', verifyToken, checkRole(['ADMIN', 'MANAGER']), getUsersByRol
 router.patch('/users/:id', verifyToken, checkRole(['ADMIN', 'MANAGER']), updateUser);
 router.delete('/users/:id', verifyToken, checkRole(['ADMIN']), deleteUser);
 
-// New Assignment Endpoints
-router.get('/projects/:id/clients', verifyToken, checkRole(['ADMIN', 'MANAGER']), getAssignedClients);
-router.post('/projects/:id/assign-client', verifyToken, checkRole(['ADMIN', 'MANAGER']), assignClientDirectly);
+// Client Onboarding Endpoints
+router.post('/clients', verifyToken, checkRole(['ADMIN']), createClientBase);
+router.get('/clients/onboarding-requests', verifyToken, checkRole(['ADMIN']), getOnboardingApprovals);
+router.patch('/clients/onboarding/:profileId', verifyToken, checkRole(['ADMIN']), approveClientOnboarding);
 
 module.exports = router;

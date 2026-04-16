@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const bcrypt = require('bcryptjs');
 const { calculateProgress, getProjectHealth } = require('../services/progressService');
 
 // Helper to verify if user has permission to manage a project
@@ -12,6 +13,92 @@ const checkProjectAdminAccess = async (projectId, userId, role) => {
 
   if (!project) return false;
   return project.managerId === userId;
+};
+
+const createClientBase = async (req, res) => {
+  try {
+    const { email, password, legalName } = req.body;
+
+    if (!email || !password || !legalName) {
+      return res.status(400).json({ error: 'Email, password, and legalName are required' });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already in use' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          role: 'CLIENT'
+        }
+      });
+
+      const profile = await tx.clientProfile.create({
+        data: {
+          userId: user.id,
+          legalName,
+          onboardingStatus: 'PENDING_ONBOARDING'
+        }
+      });
+
+      return { user, profile };
+    });
+
+    const { password: _, ...userWithoutPassword } = result.user;
+    res.status(201).json({ 
+      message: 'Client account created successfully. Awaiting onboarding.',
+      user: userWithoutPassword,
+      profile: result.profile
+    });
+  } catch (error) {
+    console.error('Create client base error:', error);
+    res.status(500).json({ error: 'Internal server error while creating client base' });
+  }
+};
+
+const getOnboardingApprovals = async (req, res) => {
+  try {
+    const pendingClients = await prisma.clientProfile.findMany({
+      where: { onboardingStatus: 'PENDING_APPROVAL' },
+      include: {
+        user: { select: { email: true } },
+        documents: true
+      }
+    });
+    res.json(pendingClients);
+  } catch (error) {
+    console.error('Get onboarding approvals error:', error);
+    res.status(500).json({ error: 'Internal server error fetching onboarding requests' });
+  }
+};
+
+const approveClientOnboarding = async (req, res) => {
+  try {
+    const { profileId } = req.params;
+    const { action } = req.body; // 'APPROVE' or 'REJECT'
+
+    if (!['APPROVE', 'REJECT'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action. Must be APPROVE or REJECT' });
+    }
+
+    const status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+
+    const updatedProfile = await prisma.clientProfile.update({
+      where: { id: parseInt(profileId) },
+      data: { onboardingStatus: status }
+    });
+
+    res.json({ message: `Client onboarding ${status.toLowerCase()} successfully`, profile: updatedProfile });
+  } catch (error) {
+    console.error('Approve onboarding error:', error);
+    res.status(500).json({ error: 'Internal server error while processing onboarding approval' });
+  }
 };
 
 const approveInterest = async (req, res) => {
@@ -194,27 +281,53 @@ const reassignProject = async (req, res) => {
 
 const getUsersByRole = async (req, res) => {
   try {
-    const { role } = req.query;
+    const { role, page = 1, limit = 10, search = '' } = req.query;
+    const p = parseInt(page);
+    const l = parseInt(limit);
+    const skip = (p - 1) * l;
+
     const where = {};
     if (role) {
       where.role = role.toUpperCase();
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      include: {
-        clientProfile: {
-          include: { documents: true }
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        {
+          clientProfile: {
+            legalName: { contains: search, mode: 'insensitive' }
+          }
         }
-      }
-    });
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: l,
+        include: {
+          clientProfile: {
+            include: { documents: true }
+          }
+        },
+        orderBy: { id: 'desc' }
+      }),
+      prisma.user.count({ where })
+    ]);
 
     const sanitizedUsers = users.map(u => {
       const { password, ...rest } = u;
       return rest;
     });
 
-    res.json(sanitizedUsers);
+    res.json({
+      users: sanitizedUsers,
+      total,
+      pages: Math.ceil(total / l),
+      currentPage: p
+    });
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ error: 'Internal server error while fetching users' });
@@ -480,6 +593,9 @@ const deleteProject = async (req, res) => {
 };
 
 module.exports = {
+  approveClientOnboarding,
+  getOnboardingApprovals,
+  createClientBase,
   approveInterest,
   rejectInterest,
   getPendingInterests,

@@ -12,6 +12,7 @@ const login = async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { clientProfile: { select: { onboardingStatus: true } } }
     });
 
     if (!user) {
@@ -36,6 +37,7 @@ const login = async (req, res) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        onboardingStatus: user.clientProfile?.onboardingStatus || null
       },
     });
   } catch (error) {
